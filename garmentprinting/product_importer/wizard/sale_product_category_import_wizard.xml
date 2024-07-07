@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo> 
+    <record id="sale_product_category_import_wizard_view" model="ir.ui.view">
+        <field name="name">sale.product.category.import.wizard</field>
+        <field name="model">sale.product.category.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Product Category Wizard">
+                <group>
+                    <field name="database_attachment"/>
+                </group>
+                <footer>
+                    <button string="Import Categories" type="object" name="import_categories" class="oe_highlight"/>
+                    <button string="Cancel" class="oe_link" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_sale_product_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Product</field>
+        <field name="res_model">sale.product.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_sale_product_category_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Product Category</field>
+        <field name="res_model">sale.product.category.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_sale_product_image_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Product Image</field>
+        <field name="res_model">sale.product.image.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_sale_product_language_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Product Lenguage</field>
+        <field name="res_model">sale.product.language.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+     
+    <menuitem id="menu_product_import"
+        name="Import Product"
+        parent="sale.product_menu_catalog" 
+        action="action_sale_product_import_wizard"
+        sequence="40"/>
+
+    <menuitem id="menu_product_category_import"
+        name="Import Product Category"
+        parent="sale.product_menu_catalog" 
+        action="action_sale_product_category_import_wizard"
+        sequence="40"/>
+
+    <menuitem id="menu_product_image_import"
+        name="Import Product Image"
+        parent="sale.product_menu_catalog" 
+        action="action_sale_product_image_import_wizard"
+        sequence="40"/>
+
+    <menuitem id="menu_product_language_import"
+        name="Import Product Language"
+        parent="sale.product_menu_catalog" 
+        action="action_sale_product_language_import_wizard"
+        sequence="40"/>
+</odoo>
