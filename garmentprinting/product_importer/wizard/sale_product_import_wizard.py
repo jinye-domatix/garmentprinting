@@ -15,6 +15,21 @@ class SaleProductImportWizard(models.TransientModel):
 
     database_attachment = fields.Binary(string='Database Attachment', required=True)
 
+    supplier_selector = fields.Selection([
+        ('falkross', 'FalkRoss'),
+        ('ralawise', 'Ralawise'),
+        ('makito', 'Makito'),
+    ], string='Supplier Selector', help='Choose an option', required=True)
+
+
+    def import_product(self):
+        if self.supplier_selector == 'falkross':
+            self.import_products()
+        elif self.supplier_selector == 'ralawise':
+            self.import_products_ralawise()
+        else:
+            self.import_products_makito()
+
     # Import the products.template and create their variants
     def import_products(self):
         if self.database_attachment:
@@ -244,6 +259,173 @@ class SaleProductImportWizard(models.TransientModel):
                         'product_template_attribute_value_id': color_attribute.id,
                         'value_ids': [(6, 0, value_ids)]
                     })
+                    _logger.debug(
+                        f"Exclusion created for color {color.name} with missing sizes in product {template.name}")
+
+            template._create_variant_ids()
+        return True
+    
+    # RALAWISE
+    # Import the products.template and create their variants
+    def import_products_ralawise(self):
+        if self.database_attachment:
+            data = base64.b64decode(self.database_attachment)
+            excel_data = io.BytesIO(data)
+            df = pd.read_excel(excel_data, index_col=None, header=0, dtype={'ProductGroup': str, 'SkuCode': str, 'ColourNmae': str, 'SizeCode': str, 'CustCartonPrice': str, 'ProductName': str})
+
+            product_templates = {}
+            total_rows = len(df.index)
+            for index, row in df.iterrows():
+                if index % 300 == 0:
+                    _logger.debug(f"{index} IMPORTED PRODUCTS of {total_rows}")
+                product_template = self.ensure_product_template_ralawise(row, df)
+                product_templates[product_template] = product_template
+            for product_template in product_templates:
+                for product in product_template.product_variant_ids:
+                    self.update_product_variant_ralawise(product, df)
+            self.product_exclusions_ralawise(df, product_templates)
+               
+    def ensure_product_template_ralawise(self, row, df):
+        product_template = self.env['product.template'].search([('default_code', '=', row['ProductGroup'])], limit=1)
+
+        if not product_template:
+            filtered_df = df[df['ProductGroup'] == row['ProductGroup']]
+
+            unique_colors = filtered_df['ColourName'].unique()
+            unique_sizes = filtered_df['SizeCode'].unique()
+
+            color_value_ids = [self.get_or_create_attribute_value_ralawise('Color', color) for color in unique_colors]
+            size_value_ids = [self.get_or_create_attribute_value_ralawise('Size', size) for size in unique_sizes]
+
+            product_template = self.env['product.template'].create({
+                'short_article_number': row['ProductGroup'],
+                'default_code': row['ProductGroup'],
+                'name': row['ProductName'],
+                'attribute_line_ids': [
+                    (0, 0, {'attribute_id': self.get_attribute_id_ralawise('Color'), 'value_ids': [(6, 0, color_value_ids)]}),
+                    (0, 0, {'attribute_id': self.get_attribute_id_ralawise('Size'), 'value_ids': [(6, 0, size_value_ids)]})
+                ]
+            })
+            self.env.cr.commit()
+
+            product_template._create_variant_ids()
+        return product_template
+
+    def get_or_create_attribute_value_ralawise(self, attribute_name, value):
+        attribute_id = self.get_attribute_id_ralawise(attribute_name)
+        value_str = str(value)
+        attribute_value = self.env['product.attribute.value'].search([('attribute_id', '=', attribute_id), ('name', '=', value_str)], limit=1)
+        if not attribute_value:
+            attribute_value = self.env['product.attribute.value'].create({'attribute_id': attribute_id, 'name': value_str})
+        return attribute_value.id
+
+    def get_attribute_id_ralawise(self, attribute_name):
+        attribute = self.env['product.attribute'].search([('name', '=', attribute_name)], limit=1)
+        if not attribute:
+            if attribute_name == "Color":
+                attribute = self.env['product.attribute'].create({
+                    'name': attribute_name,
+                    'display_type': 'color'
+                })
+                self.env.cr.commit()
+            else:
+                attribute = self.env['product.attribute'].create({
+                    'name': attribute_name,
+                    'display_type': 'select'
+                })
+                self.env.cr.commit()
+        return attribute.id
+
+    # Add all attributes to each products.product
+    def update_product_variant_ralawise(self, product, df):
+        Article_name = product.name
+        color_name = product.product_template_attribute_value_ids.filtered(
+            lambda v: v.attribute_id.name == 'Color').product_attribute_value_id.name if product.product_template_attribute_value_ids.filtered(
+            lambda v: v.attribute_id.name == 'Color') else 'Unknown Color'
+        size_name = product.product_template_attribute_value_ids.filtered(
+            lambda v: v.attribute_id.name == 'Size').product_attribute_value_id.name if product.product_template_attribute_value_ids.filtered(
+            lambda v: v.attribute_id.name == 'Size') else 'Unknown Size'
+        _logger.debug(f"Updating product: {product.id}, Name: {Article_name}, Color: {color_name}, Size: {size_name}")
+
+        matching_rows = df[(df['ProductName'] == Article_name) &
+                        (df['ColourName'] == color_name) &
+                        (df['SizeCode'] == size_name)]
+
+        _logger.debug(f"Searching for: Article_name: {Article_name}, Color_Name: {color_name}, Size_Description: {size_name}")
+        _logger.debug(f"Matching rows found: {len(matching_rows)}")
+        if not matching_rows.empty:
+            _logger.debug(f"Found row for product: {product.id}")
+            self.update_variant_ralawise(product, matching_rows.iloc[0])
+        else:
+            _logger.debug(f"No row found for product: {product.id}")
+
+    def update_variant_ralawise(self, variant, row):
+        _logger.debug(f"Updating variant fields for: {variant.id}")
+        variant.write({
+            'default_code': row['SkuCode'],
+            'lst_price': row['CustCartonPrice'],
+            'description': row['Specification'],
+            'brand': row['Brand']
+        })
+        self.env.cr.commit()
+
+    # Excludes color and size combinations
+    def product_exclusions_ralawise(self, df, product_templates):
+        product_templates = list(product_templates)
+
+        product_attributes = self.env['product.template.attribute.value'].search([
+            ('product_tmpl_id', 'in', [pt.id for pt in product_templates])
+        ])
+        attribute_lines = self.env['product.template.attribute.line'].search([
+            ('product_tmpl_id', 'in', [pt.id for pt in product_templates])
+        ])
+
+        for template in product_templates:
+            template_lines = attribute_lines.filtered(lambda l: l.product_tmpl_id.id == template.id)
+            all_sizes = template_lines.filtered(lambda l: l.attribute_id.display_name == 'Size').mapped('value_ids')
+            all_size_names = set(size.name for size in all_sizes)
+            all_colors = template_lines.filtered(lambda l: l.attribute_id.display_name == 'Color').mapped('value_ids')
+
+            for color in all_colors:
+                product_df = df[df['ProductName'] == template.name]
+                color_df = product_df[product_df['ColourName'] == color.name]
+
+                if color_df.empty:
+                    _logger.debug(f"No data found for color {color.name} in product {template.name}")
+                    continue
+
+                color_sizes = set(color_df['SizeCode'].dropna())
+                available_size_names = set(color_sizes)
+
+                sizes_to_exclude = all_size_names - available_size_names
+                _logger.debug(f"All sizes: {all_size_names}")
+                _logger.debug(f"Available sizes for {color.name}: {available_size_names}")
+                _logger.debug(f"Sizes to exclude for {color.name}: {sizes_to_exclude}")
+
+                if not sizes_to_exclude:
+                    _logger.debug(f"No sizes to exclude for color {color.name} in product {template.name}")
+                    continue
+
+                color_attribute = product_attributes.filtered(
+                    lambda v: v.product_tmpl_id.id == template.id and v.name == color.name)
+                if not color_attribute:
+                    _logger.debug(f"No attribute value found for color {color.name} in template {template.name}")
+                    continue
+
+                value_ids = []
+                for size_name in sizes_to_exclude:
+                    size_attribute = product_attributes.filtered(
+                        lambda v: v.product_tmpl_id.id == template.id and v.name == size_name)
+                    if size_attribute:
+                        value_ids.append(size_attribute.id)
+
+                if value_ids:
+                    self.env['product.template.attribute.exclusion'].create({
+                        'product_tmpl_id': template.id,
+                        'product_template_attribute_value_id': color_attribute.id,
+                        'value_ids': [(6, 0, value_ids)]
+                    })
+                    self.env.cr.commit()
                     _logger.debug(
                         f"Exclusion created for color {color.name} with missing sizes in product {template.name}")
 
