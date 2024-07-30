@@ -110,30 +110,30 @@ class SaleProductImportWizard(models.TransientModel):
             _logger.debug("Attribute 'Color' not found.")
             return
 
-        for value in attribute_color.value_ids:
-            if value.image:
-                _logger.debug(f"El color '{value.name}' ya tiene imagen asignada. Se omite.")
-                continue
-            image_path = df[df['Color_Name'] == value.name]['Pictogram'].values[0] if len(df[df['Color_Name'] == value.name]['Pictogram'].values) > 0 else None
-            if not image_path:
-                _logger.debug(f"No se encontró el path de imagen para: {value.name}")
-                continue
-            full_path = None
-            try:
-                full_path = file_path(f'product_importer/data/Piktogramme/{image_path}')
-            except FileNotFoundError:
-                _logger.debug(f"No se encontró el archivo de imagen para: {value.name} en {full_path}")
-                continue
-            if not os.path.exists(full_path):
-                _logger.debug(f"No se encontró el archivo de imagen para: {value.name} en {full_path}")
-                continue
-
-            encoded_image = self.encode_image(full_path)
-            if encoded_image:
-                value.write({'image': encoded_image})
-                _logger.debug(f"Imagen asignada al valor de color '{value.name}'.")
-            else:
-                _logger.debug(f"No se pudo codificar la imagen para el color '{value.name}'.")
+        # for value in attribute_color.value_ids:
+        #     if value.image:
+        #         _logger.debug(f"El color '{value.name}' ya tiene imagen asignada. Se omite.")
+        #         continue
+        #     image_path = df[df['Color_Name'] == value.name]['Pictogram'].values[0] if len(df[df['Color_Name'] == value.name]['Pictogram'].values) > 0 else None
+        #     if not image_path:
+        #         _logger.debug(f"No se encontró el path de imagen para: {value.name}")
+        #         continue
+        #     full_path = None
+        #     try:
+        #         full_path = file_path(f'product_importer/data/Piktogramme/{image_path}')
+        #     except FileNotFoundError:
+        #         _logger.debug(f"No se encontró el archivo de imagen para: {value.name} en {full_path}")
+        #         continue
+        #     if not os.path.exists(full_path):
+        #         _logger.debug(f"No se encontró el archivo de imagen para: {value.name} en {full_path}")
+        #         continue
+        #
+        #     encoded_image = self.encode_image(full_path)
+        #     if encoded_image:
+        #         value.write({'image': encoded_image})
+        #         _logger.debug(f"Imagen asignada al valor de color '{value.name}'.")
+        #     else:
+        #         _logger.debug(f"No se pudo codificar la imagen para el color '{value.name}'.")
 
     def encode_image(self, image_path):
         try:
