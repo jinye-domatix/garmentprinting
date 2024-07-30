@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo> 
+    <record id="color_code_import_wizard_view" model="ir.ui.view">
+        <field name="name">color.code.import.wizard</field>
+        <field name="model">color.code.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Color Code Wizard">
+                <group>
+                    <field name="database_attachment"/>
+                </group>
+                <footer>
+                    <button string="Import Color Code" type="object" name="import_color_code" class="oe_highlight"/>
+                    <button string="Cancel" class="oe_link" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
