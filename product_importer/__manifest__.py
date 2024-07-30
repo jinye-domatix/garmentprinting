@@ -19,6 +19,7 @@
              "wizard/sale_product_category_import_wizard.xml",
              "wizard/sale_product_image_import_wizard.xml",
              "wizard/sale_product_language_import_wizard.xml",
+             "wizard/color_code_import_wizard.xml",
              "security/ir.model.access.csv",
              ]
 }
