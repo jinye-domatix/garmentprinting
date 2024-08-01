@@ -27,6 +27,13 @@
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>
+
+    <record id="action_color_code_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Color Code</field>
+        <field name="res_model">color.code.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
      
     <menuitem id="menu_product_import"
         name="Import Product"
@@ -50,5 +57,11 @@
         name="Import Product Language"
         parent="sale.product_menu_catalog" 
         action="action_sale_product_language_import_wizard"
+        sequence="40"/>
+
+    <menuitem id="menu_product_language_import"
+        name="Import Color Code"
+        parent="sale.product_menu_catalog"
+        action="action_color_code_import_wizard"
         sequence="40"/>
 </odoo>
