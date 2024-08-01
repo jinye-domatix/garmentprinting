@@ -42,3 +42,8 @@
 	path = OCA/account-reconcile
 	url = git@github.com:OCA/account-reconcile.git
 	branch = 17.0
+
+[submodule "OCA/mis-builder"]
+	path = OCA/mis-builder
+	url = git@github.com:OCA/mis-builder.git
+	branch = 17.0
