@@ -1,6 +1,6 @@
 from odoo import models, fields
 
-class SaleMod(models.Model):
+class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
     supplier_article_code = fields.Char(string='Supplier Article Code')
