@@ -46,12 +46,7 @@ class ImportProductsWizard(models.TransientModel):
                 if not product:
                     print(f"Product with article number {article_number} not found.")
                     continue
-                color_product_variant_ids = product.product_variant_ids.filtered(
-                    lambda p: any(
-                        ptav.product_attribute_value_id.color_code == str(color_code) and ptav.attribute_id.name == "Color"
-                        for ptav in p.product_template_attribute_value_ids
-                    )
-                )
+                color_product_variant_ids = product.product_variant_ids.filtered(lambda p: p.color_code == str(color_code))
                 if color_product_variant_ids:
                     for color_product_variant_id in color_product_variant_ids:
                         try:

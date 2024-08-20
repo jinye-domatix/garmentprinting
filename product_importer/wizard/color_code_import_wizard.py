@@ -10,7 +10,6 @@ class ColorCodeImportWizard(models.TransientModel):
 
     database_attachment = fields.Binary(string='Database Attachment', required=True)
 
-    #Import categories from all the products
     def import_color_code(self):
         if self.database_attachment:
             data = base64.b64decode(self.database_attachment)
@@ -19,12 +18,12 @@ class ColorCodeImportWizard(models.TransientModel):
                                dtype={'EAN': str, 'Article number short': str, 'Article number long': str})
 
             for _, row in df.iterrows():
-                color_name = row['Color_Name']
+                article_number_long = row['Article number long']
                 color_code = row['Color_Code']
 
-                # Buscar el registro de color correspondiente
-                color_record = self.env['product.attribute.value'].search([('name', '=', color_name)], limit=1)
+                # Search for the corresponding product
+                product_ids = self.env['product.product'].search([('default_code', '=', article_number_long)])
 
-                # Si se encuentra el registro de color, actualizar el campo color_code
-                if color_record:
-                    color_record.write({'color_code': color_code})
+                # If the product is found, update the color_code field
+                if product_ids:
+                    product_ids.write({'color_code': color_code})
